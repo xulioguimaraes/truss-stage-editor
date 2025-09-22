@@ -1,0 +1,263 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+}
+
+.App {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* Estilos para os painéis da UI */
+.panel {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .panel {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .piece-grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  
+  .control-button {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel {
+    padding: 10px;
+    margin: 5px;
+  }
+  
+  .piece-button {
+    min-height: 60px;
+    padding: 8px;
+  }
+  
+  .piece-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+}
+
+/* Estilos para o canvas 3D */
+canvas {
+  display: block;
+  outline: none;
+}
+
+/* Estilos para elementos interativos */
+.interactive {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.interactive:hover {
+  transform: translateY(-2px);
+}
+
+.interactive:active {
+  transform: translateY(0);
+}
+
+/* Estilos para o overlay de instruções */
+.instructions-overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 250px;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.instructions-overlay h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.instructions-overlay ul {
+  margin: 0;
+  padding-left: 15px;
+  line-height: 1.4;
+}
+
+.instructions-overlay li {
+  margin: 4px 0;
+}
+
+/* Estilos para indicadores de estado */
+.selected-indicator {
+  border: 2px solid #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.dragging-indicator {
+  opacity: 0.7;
+  transform: scale(1.05);
+}
+
+.snap-indicator {
+  border: 2px solid #ff0000;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+/* Estilos para botões de rotação */
+.rotation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.rotation-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: white;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 35px;
+}
+
+.rotation-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.rotation-button:active {
+  transform: translateY(0);
+}
+
+/* Estilos para informações de peça */
+.piece-info {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+}
+
+.piece-info .label {
+  color: #666;
+  font-weight: 500;
+}
+
+.piece-info .value {
+  color: #333;
+  font-weight: 400;
+}
+
+/* Estilos para o grid de peças */
+.piece-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.piece-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 80px;
+  justify-content: center;
+}
+
+.piece-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+}
+
+.piece-button:active {
+  transform: translateY(0);
+}
+
+.piece-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.piece-icon {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.piece-name {
+  text-align: center;
+  line-height: 1.2;
+}
