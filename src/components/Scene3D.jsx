@@ -18,7 +18,7 @@ import {
 } from './TrussPieces';
 
 // Componente para renderizar uma peça individual
-const TrussPiece = ({ piece, isSelected, isDragging, onSelect, onDrag, onDrop, snapPreview }) => {
+const TrussPiece = ({ piece, isSelected, movementMode, onSelect, onDrag, onDrop, snapPreview }) => {
   const ComponentMap = {
     Cube5Faces,
     Grid0_5m,
@@ -50,11 +50,12 @@ const TrussPiece = ({ piece, isSelected, isDragging, onSelect, onDrag, onDrop, s
       onClick={handleClick}
     >
       <Component
-        position={[0, 0, 0]}
+        position={piece.position}
         rotation={[0, 0, 0]}
         scale={[1, 1, 1]}
         isSelected={isSelected}
-        isDragging={isDragging}
+        pieceId={piece.id}
+        movementMode={movementMode}
         onSelect={() => onSelect(piece.id)}
         onDrag={onDrag}
         onDrop={onDrop}
@@ -97,6 +98,7 @@ const SceneContent = ({
   pieces, 
   selectedPiece, 
   draggingPiece, 
+  movementMode,
   onSelect, 
   onUpdatePiece, 
   onStartDrag, 
@@ -104,23 +106,74 @@ const SceneContent = ({
 }) => {
   const { snapToNearest, getSnapPreview } = useSnapping(pieces);
   const [snapPreview, setSnapPreview] = useState(null);
+  const [isDraggingPiece, setIsDraggingPiece] = useState(false);
 
   const handleDrag = useCallback((piece, newPosition) => {
-    const snappedPosition = snapToNearest(newPosition, piece.id);
-    onUpdatePiece(piece.id, { position: snappedPosition });
-    
-    // Atualizar preview de encaixe
-    const preview = getSnapPreview(newPosition, piece.id);
-    setSnapPreview(preview);
+    // Se piece tem um id, é uma peça existente sendo arrastada
+    if (piece && piece.id !== undefined) {
+      console.log('🟢 SCENE3D RECEIVED:', {
+        'Piece ID': piece.id,
+        'NewPosition (input)': newPosition,
+        'NewPosition type': typeof newPosition,
+        'NewPosition isArray': Array.isArray(newPosition),
+        'NewPosition values': Array.isArray(newPosition) ? 
+          `X:${newPosition[0]?.toFixed(3)}, Y:${newPosition[1]?.toFixed(3)}, Z:${newPosition[2]?.toFixed(3)}` :
+          `X:${newPosition.x?.toFixed(3)}, Y:${newPosition.y?.toFixed(3)}, Z:${newPosition.z?.toFixed(3)}`
+      });
+      
+      setIsDraggingPiece(true);
+      const snappedPosition = snapToNearest(newPosition, piece.id);
+      
+      console.log('🟢 SCENE3D SNAPPED:', {
+        'SnappedPosition': snappedPosition,
+        'SnappedPosition type': typeof snappedPosition,
+        'SnappedPosition isArray': Array.isArray(snappedPosition),
+        'SnappedPosition values': Array.isArray(snappedPosition) ? 
+          `X:${snappedPosition[0]?.toFixed(3)}, Y:${snappedPosition[1]?.toFixed(3)}, Z:${snappedPosition[2]?.toFixed(3)}` :
+          `X:${snappedPosition.x?.toFixed(3)}, Y:${snappedPosition.y?.toFixed(3)}, Z:${snappedPosition.z?.toFixed(3)}`
+      });
+      
+      // Garantir que a posição seja um array válido
+      const positionArray = Array.isArray(snappedPosition) ? snappedPosition : snappedPosition.toArray();
+      
+      console.log('🟢 SCENE3D FINAL:', {
+        'PositionArray': positionArray,
+        'PositionArray values': `X:${positionArray[0]?.toFixed(3)}, Y:${positionArray[1]?.toFixed(3)}, Z:${positionArray[2]?.toFixed(3)}`,
+        'Action': 'Sending to onUpdatePiece...'
+      });
+      
+      onUpdatePiece(piece.id, { position: positionArray });
+      
+      // Atualizar preview de encaixe
+      const preview = getSnapPreview(newPosition, piece.id);
+      setSnapPreview(preview);
+    }
   }, [snapToNearest, getSnapPreview, onUpdatePiece]);
 
   const handleDragEnd = useCallback((piece) => {
+    setIsDraggingPiece(false);
     onEndDrag();
     setSnapPreview(null);
   }, [onEndDrag]);
 
+  // Handler para deselecionar peça ao clicar em área vazia
+  const handleSceneClick = useCallback((event) => {
+    console.log('🟡 SCENE CLICK: Deselecting piece');
+    onSelect(null);
+  }, [onSelect]);
+
   return (
     <>
+      {/* Plano invisível para capturar cliques em área vazia */}
+      <mesh 
+        position={[0, 0, 0]} 
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={handleSceneClick}
+      >
+        <planeGeometry args={[100, 100]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
       {/* Iluminação */}
       <ambientLight intensity={0.4} />
       <directionalLight
@@ -150,7 +203,7 @@ const SceneContent = ({
           key={piece.id}
           piece={piece}
           isSelected={selectedPiece === piece.id}
-          isDragging={draggingPiece === piece.id}
+          movementMode={movementMode}
           onSelect={onSelect}
           onDrag={handleDrag}
           onDrop={handleDragEnd}
@@ -170,7 +223,7 @@ const SceneContent = ({
       <OrbitControls
         enablePan={true}
         enableZoom={true}
-        enableRotate={true}
+        enableRotate={!isDraggingPiece}
         minDistance={5}
         maxDistance={50}
         maxPolarAngle={Math.PI / 2}
@@ -184,6 +237,7 @@ const Scene3D = ({
   pieces, 
   selectedPiece, 
   draggingPiece, 
+  movementMode,
   onSelect, 
   onUpdatePiece, 
   onStartDrag, 
@@ -200,6 +254,7 @@ const Scene3D = ({
         pieces={pieces}
         selectedPiece={selectedPiece}
         draggingPiece={draggingPiece}
+        movementMode={movementMode}
         onSelect={onSelect}
         onUpdatePiece={onUpdatePiece}
         onStartDrag={onStartDrag}

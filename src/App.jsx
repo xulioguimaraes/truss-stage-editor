@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { useTrussEditor } from './hooks/useTrussEditor';
-import SimpleScene from './components/SimpleScene';
+import Scene3D from './components/Scene3D';
 import { PiecePalette, ControlPanel, SelectedPieceInfo } from './components/UI';
 import './App.css';
 
@@ -9,16 +9,17 @@ function App() {
     pieces,
     selectedPiece,
     draggingPiece,
+    movementMode,
     addPiece,
     removePiece,
     updatePiece,
     selectPiece,
     startDrag,
-    updateDrag,
     endDrag,
     rotatePiece,
     getPieceById,
     clearAll,
+    toggleMovementMode,
   } = useTrussEditor();
 
   // Função para adicionar uma nova peça
@@ -83,7 +84,16 @@ function App() {
   return (
     <div className="App">
       {/* Cena 3D principal */}
-      <SimpleScene />
+      <Scene3D
+        pieces={pieces}
+        selectedPiece={selectedPiece}
+        draggingPiece={draggingPiece}
+        movementMode={movementMode}
+        onSelect={selectPiece}
+        onUpdatePiece={updatePiece}
+        onStartDrag={startDrag}
+        onEndDrag={endDrag}
+      />
 
       {/* Interface de usuário */}
       <PiecePalette onAddPiece={handleAddPiece} />
@@ -98,7 +108,10 @@ function App() {
 
       <SelectedPieceInfo
         selectedPiece={getPieceById(selectedPiece)}
+        movementMode={movementMode}
         onRotate={handleRotatePiece}
+        onUpdatePiece={updatePiece}
+        onToggleMovementMode={toggleMovementMode}
       />
 
       {/* Overlay de instruções */}
@@ -117,10 +130,12 @@ function App() {
         <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Como usar:</h4>
         <ul style={{ margin: 0, paddingLeft: '15px' }}>
           <li>Clique em uma peça no painel para adicionar</li>
-          <li>Arraste as peças para movê-las</li>
-          <li>Clique em uma peça para selecioná-la</li>
+          <li>Selecione uma peça para ver os controles</li>
+          <li>Use o switch para escolher modo de movimento:</li>
+          <li style={{ marginLeft: '10px' }}>📐 X-Z: mover no plano horizontal</li>
+          <li style={{ marginLeft: '10px' }}>📏 Y: mover na altura</li>
+          <li>Arraste as peças conforme o modo selecionado</li>
           <li>Use Delete para remover a peça selecionada</li>
-          <li>As peças se encaixam automaticamente</li>
         </ul>
       </div>
     </div>

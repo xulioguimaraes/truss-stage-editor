@@ -8,17 +8,27 @@ const Grid = ({
   rotation, 
   scale, 
   isSelected, 
-  isDragging, 
+  pieceId,
+  movementMode,
   onSelect, 
   onDrag, 
   onDrop 
 }) => {
-  // Pontos de encaixe nas extremidades
+  // Pontos de encaixe nas extremidades (correspondem aos pontos de snapping)
   const snapPoints = [
+    // Pontos de encaixe nas extremidades (principais para conexão)
     [length/2, 0, 0],    // Extremidade direita
     [-length/2, 0, 0],   // Extremidade esquerda
-    [0, 0.2, 0],         // Topo
-    [0, -0.2, 0],        // Base
+    
+    // Pontos de encaixe verticais (para conexões em altura)
+    [length/2, 0.2, 0],  // Topo da extremidade direita
+    [-length/2, 0.2, 0], // Topo da extremidade esquerda
+    [length/2, -0.2, 0], // Base da extremidade direita
+    [-length/2, -0.2, 0], // Base da extremidade esquerda
+    
+    // Pontos de encaixe no centro (para conexões centrais)
+    [0, 0.2, 0],         // Topo central
+    [0, -0.2, 0],        // Base central
   ];
 
   return (
@@ -27,11 +37,13 @@ const Grid = ({
       rotation={rotation}
       scale={scale}
       isSelected={isSelected}
-      isDragging={isDragging}
+      pieceId={pieceId}
+      movementMode={movementMode}
       onSelect={onSelect}
       onDrag={onDrag}
       onDrop={onDrop}
       snapPoints={snapPoints}
+      pieceDimensions={[length, 0.4, 0.4]} // Dimensões reais da peça
     >
       {/* Estrutura principal do grid */}
       <Box args={[length, 0.4, 0.4]} position={[0, 0, 0]}>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Cylinder } from '@react-three/drei';
 import BaseTrussPiece from './BaseTrussPiece';
 
-const Sapata = ({ position, rotation, scale, isSelected, isDragging, onSelect, onDrag, onDrop }) => {
+const Sapata = ({ position, rotation, scale, isSelected, pieceId, movementMode, onSelect, onDrag, onDrop }) => {
   // Pontos de encaixe no topo da sapata
   const snapPoints = [
     [0, 0.3, 0],    // Centro do topo
@@ -18,11 +18,13 @@ const Sapata = ({ position, rotation, scale, isSelected, isDragging, onSelect, o
       rotation={rotation}
       scale={scale}
       isSelected={isSelected}
-      isDragging={isDragging}
+      pieceId={pieceId}
+      movementMode={movementMode}
       onSelect={onSelect}
       onDrag={onDrag}
       onDrop={onDrop}
       snapPoints={snapPoints}
+      pieceDimensions={[0.8, 0.4, 0.8]} // Base 0.8x0.2 + altura 0.4
     >
       {/* Base quadrada da sapata */}
       <Box args={[0.8, 0.2, 0.8]} position={[0, -0.1, 0]}>

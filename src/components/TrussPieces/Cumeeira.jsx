@@ -3,7 +3,7 @@ import { Box } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import BaseTrussPiece from './BaseTrussPiece';
 
-const Cumeeira = ({ position, rotation, scale, isSelected, isDragging, onSelect, onDrag, onDrop }) => {
+const Cumeeira = ({ position, rotation, scale, isSelected, pieceId, movementMode, onSelect, onDrag, onDrop }) => {
   // Pontos de encaixe nas extremidades da cumeeira
   const snapPoints = [
     [0, 0.5, 0],     // Topo da curva
@@ -35,11 +35,13 @@ const Cumeeira = ({ position, rotation, scale, isSelected, isDragging, onSelect,
       rotation={rotation}
       scale={scale}
       isSelected={isSelected}
-      isDragging={isDragging}
+      pieceId={pieceId}
+      movementMode={movementMode}
       onSelect={onSelect}
       onDrag={onDrag}
       onDrop={onDrop}
       snapPoints={snapPoints}
+      pieceDimensions={[1, 0.5, 0.2]} // Largura 1, altura 0.5, profundidade 0.2
     >
       {/* Estrutura curva principal */}
       <group>

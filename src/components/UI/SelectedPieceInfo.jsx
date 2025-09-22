@@ -49,7 +49,7 @@ const RotationControls = styled.div`
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 `;
 
-const RotationButton = styled.button`
+const Button = styled.button`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 6px;
@@ -72,7 +72,43 @@ const RotationButton = styled.button`
   }
 `;
 
-const SelectedPieceInfo = ({ selectedPiece, onRotate }) => {
+const MovementSwitch = styled.div`
+  display: flex;
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 4px;
+  margin: 8px 0;
+  position: relative;
+`;
+
+const SwitchOption = styled.button`
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: ${props => props.active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent'};
+  color: ${props => props.active ? 'white' : '#666'};
+  
+  &:hover {
+    background: ${props => props.active ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'rgba(102, 126, 234, 0.1)'};
+  }
+`;
+
+const ModeIndicator = styled.div`
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: ${props => props.mode === 'horizontal' ? 'rgba(102, 126, 234, 0.1)' : 'rgba(245, 87, 108, 0.1)'};
+  border-left: 3px solid ${props => props.mode === 'horizontal' ? '#667eea' : '#f5576c'};
+  font-size: 11px;
+  color: #333;
+`;
+
+const SelectedPieceInfo = ({ selectedPiece, movementMode, onRotate, onUpdatePiece, onToggleMovementMode }) => {
   if (!selectedPiece) {
     return (
       <InfoContainer>
@@ -116,34 +152,62 @@ const SelectedPieceInfo = ({ selectedPiece, onRotate }) => {
         <Value>{formatPosition(selectedPiece.scale)}</Value>
       </InfoRow>
 
+      {/* Controles de Modo de Movimento */}
+      <RotationControls>
+        <Label>Modo de Movimento:</Label>
+        <MovementSwitch>
+          <SwitchOption 
+            active={movementMode === 'horizontal'} 
+            onClick={() => onToggleMovementMode()}
+          >
+            📐 X-Z
+          </SwitchOption>
+          <SwitchOption 
+            active={movementMode === 'vertical'} 
+            onClick={() => onToggleMovementMode()}
+          >
+            📏 Y
+          </SwitchOption>
+        </MovementSwitch>
+        <ModeIndicator mode={movementMode}>
+          {movementMode === 'horizontal' 
+            ? '🔄 Arraste para mover no plano horizontal (X-Z)' 
+            : '⬆️ Arraste para cima/baixo para mover na altura (Y)'
+          }
+        </ModeIndicator>
+        <div style={{ marginTop: '8px' }}>
+          <Label>Altura Atual: {selectedPiece.position[1].toFixed(2)}m</Label>
+        </div>
+      </RotationControls>
+
       <RotationControls>
         <Label>Rotação Rápida:</Label>
         <div style={{ marginTop: '8px' }}>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [0, Math.PI/2, 0])}>
+          <Button onClick={() => onRotate(selectedPiece.id, [0, Math.PI/2, 0])}>
             Y+90°
-          </RotationButton>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [0, -Math.PI/2, 0])}>
+          </Button>
+          <Button onClick={() => onRotate(selectedPiece.id, [0, -Math.PI/2, 0])}>
             Y-90°
-          </RotationButton>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [0, Math.PI, 0])}>
+          </Button>
+          <Button onClick={() => onRotate(selectedPiece.id, [0, Math.PI, 0])}>
             Y+180°
-          </RotationButton>
+          </Button>
         </div>
         <div style={{ marginTop: '4px' }}>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [Math.PI/2, 0, 0])}>
+          <Button onClick={() => onRotate(selectedPiece.id, [Math.PI/2, 0, 0])}>
             X+90°
-          </RotationButton>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [-Math.PI/2, 0, 0])}>
+          </Button>
+          <Button onClick={() => onRotate(selectedPiece.id, [-Math.PI/2, 0, 0])}>
             X-90°
-          </RotationButton>
+          </Button>
         </div>
         <div style={{ marginTop: '4px' }}>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [0, 0, Math.PI/2])}>
+          <Button onClick={() => onRotate(selectedPiece.id, [0, 0, Math.PI/2])}>
             Z+90°
-          </RotationButton>
-          <RotationButton onClick={() => onRotate(selectedPiece.id, [0, 0, -Math.PI/2])}>
+          </Button>
+          <Button onClick={() => onRotate(selectedPiece.id, [0, 0, -Math.PI/2])}>
             Z-90°
-          </RotationButton>
+          </Button>
         </div>
       </RotationControls>
     </InfoContainer>

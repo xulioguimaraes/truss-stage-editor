@@ -2,7 +2,7 @@ import React from 'react';
 import { Box } from '@react-three/drei';
 import BaseTrussPiece from './BaseTrussPiece';
 
-const Cube5Faces = ({ position, rotation, scale, isSelected, isDragging, onSelect, onDrag, onDrop }) => {
+const Cube5Faces = ({ position, rotation, scale, isSelected, pieceId, movementMode, onSelect, onDrag, onDrop }) => {
   // Pontos de encaixe nas 5 faces (excluindo a base)
   const snapPoints = [
     [0, 0.5, 0],    // Topo
@@ -18,11 +18,13 @@ const Cube5Faces = ({ position, rotation, scale, isSelected, isDragging, onSelec
       rotation={rotation}
       scale={scale}
       isSelected={isSelected}
-      isDragging={isDragging}
+      pieceId={pieceId}
+      movementMode={movementMode}
       onSelect={onSelect}
       onDrag={onDrag}
       onDrop={onDrop}
       snapPoints={snapPoints}
+      pieceDimensions={[1, 1, 1]} // Cubo 1x1x1
     >
       {/* Cubo principal */}
       <Box args={[1, 1, 1]} position={[0, 0, 0]}>

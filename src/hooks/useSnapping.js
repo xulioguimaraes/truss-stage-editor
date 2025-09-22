@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import * as THREE from 'three';
 
-export const useSnapping = (pieces, snapThreshold = 0.3) => {
+export const useSnapping = (pieces, snapThreshold = 0.5) => {
   const getSnapPoints = useCallback((piece) => {
     // Definir pontos de encaixe baseados no tipo de peça
     const basePoints = [
@@ -23,15 +23,24 @@ export const useSnapping = (pieces, snapThreshold = 0.3) => {
       case 'Grid1m':
       case 'Grid2m':
       case 'Grid3m':
-      case 'Grid4m':
+      case 'Grid4m': {
         const length = parseFloat(piece.type.replace('Grid', '').replace('m', ''));
         return [
-          ...basePoints,
+          // Pontos de encaixe nas extremidades (principais para conexão)
           [length/2, 0, 0],    // Extremidade direita
           [-length/2, 0, 0],   // Extremidade esquerda
-          [0, 0.2, 0],         // Topo
-          [0, -0.2, 0],        // Base
+          
+          // Pontos de encaixe verticais (para conexões em altura)
+          [length/2, 0.2, 0],  // Topo da extremidade direita
+          [-length/2, 0.2, 0], // Topo da extremidade esquerda
+          [length/2, -0.2, 0], // Base da extremidade direita
+          [-length/2, -0.2, 0], // Base da extremidade esquerda
+          
+          // Pontos de encaixe no centro (para conexões centrais)
+          [0, 0.2, 0],         // Topo central
+          [0, -0.2, 0],        // Base central
         ];
+      }
       
       case 'Sapata':
         return [
@@ -88,8 +97,32 @@ export const useSnapping = (pieces, snapThreshold = 0.3) => {
   }, [pieces, getSnapPoints, snapThreshold]);
 
   const snapToNearest = useCallback((position, excludeId = null) => {
+    console.log('🔴 SNAPPING INPUT:', {
+      'Position': position,
+      'Position type': typeof position,
+      'Position isArray': Array.isArray(position),
+      'Position values': Array.isArray(position) ? 
+        `X:${position[0]?.toFixed(3)}, Y:${position[1]?.toFixed(3)}, Z:${position[2]?.toFixed(3)}` :
+        `X:${position.x?.toFixed(3)}, Y:${position.y?.toFixed(3)}, Z:${position.z?.toFixed(3)}`,
+      'ExcludeId': excludeId
+    });
+    
     const snapResult = findNearestSnapPoint(position, excludeId);
-    return snapResult ? snapResult.point : position;
+    
+    console.log('🔴 SNAPPING RESULT:', {
+      'SnapResult': snapResult,
+      'HasSnap': !!snapResult
+    });
+    
+    // Se não há snap, retornar a posição original
+    if (!snapResult) {
+      console.log('🔴 SNAPPING: No snap found, returning original position');
+      return position;
+    }
+    
+    // Se há snap, retornar o ponto de encaixe
+    console.log('🔴 SNAPPING: Snap found, returning snap point');
+    return snapResult.point;
   }, [findNearestSnapPoint]);
 
   const getSnapPreview = useCallback((position, excludeId = null) => {
