@@ -16,18 +16,63 @@ const BaseTrussPiece = ({
   onDrop,
   snapPoints = [],
   pieceDimensions = [1, 1, 1], // Dimensões da peça para o outline
-  ...props 
+  worldPosition = [0, 0, 0], // Posição mundial da peça
+  worldRotation = [0, 0, 0], // Rotação mundial da peça
+  ...props
 }) => {
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
   const [isDraggingLocal, setIsDraggingLocal] = useState(false);
   const { camera, raycaster, mouse, gl } = useThree();
+
+  // Debug: Log what we're receiving
+  // Função para obter a posição mundial real do grupo pai
+  const getWorldPosition = useCallback(() => {
+    if (groupRef.current && groupRef.current.parent) {
+      const worldPosition = new THREE.Vector3();
+      groupRef.current.parent.getWorldPosition(worldPosition);
+      return [worldPosition.x, worldPosition.y, worldPosition.z];
+    }
+    return [0, 0, 0];
+  }, []);
+
+  // Função para obter a rotação mundial real do grupo pai
+  const getWorldRotation = useCallback(() => {
+    if (groupRef.current && groupRef.current.parent) {
+      const parentRotation = groupRef.current.parent.rotation;
+      return [parentRotation.x, parentRotation.y, parentRotation.z];
+    }
+    return [0, 0, 0];
+  }, []);
+
+  // Debug: Log received props and actual world values
+  const actualWorldPosition = getWorldPosition();
+  const actualWorldRotation = getWorldRotation();
+  
+  console.log('🔍 BASETRUSSPIECE RECEIVED:', {
+    'Piece ID': pieceId,
+    'WorldPosition received': `X:${worldPosition[0].toFixed(3)}, Y:${worldPosition[1].toFixed(3)}, Z:${worldPosition[2].toFixed(3)}`,
+    'WorldRotation received': `X:${worldRotation[0].toFixed(3)}, Y:${worldRotation[1].toFixed(3)}, Z:${worldRotation[2].toFixed(3)}`,
+    'Actual WorldPosition': `X:${actualWorldPosition[0].toFixed(3)}, Y:${actualWorldPosition[1].toFixed(3)}, Z:${actualWorldPosition[2].toFixed(3)}`,
+    'Actual WorldRotation': `X:${actualWorldRotation[0].toFixed(3)}, Y:${actualWorldRotation[1].toFixed(3)}, Z:${actualWorldRotation[2].toFixed(3)}`,
+    'Position prop': `X:${position[0].toFixed(3)}, Y:${position[1].toFixed(3)}, Z:${position[2].toFixed(3)}`,
+    'Rotation prop': `X:${rotation[0].toFixed(3)}, Y:${rotation[1].toFixed(3)}, Z:${rotation[2].toFixed(3)}`
+  });
+  
   const dragPlane = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
   const dragOffset = useRef(new THREE.Vector3());
   const initialMouseY = useRef(0);
   const initialHeight = useRef(0);
 
-  const getIntersectionPoint = useCallback((event, plane = dragPlane.current) => {
+  // Função para obter o plano de arraste - sempre horizontal para movimento X-Z
+  const getDragPlane = useCallback(() => {
+    // Sempre usar plano horizontal para movimento X-Z, independente da rotação
+    return new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  }, []);
+
+  const getIntersectionPoint = useCallback((event, plane = null) => {
+    // Usar o plano correto baseado na rotação
+    const correctPlane = plane || getDragPlane();
     const rect = gl.domElement.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -36,10 +81,10 @@ const BaseTrussPiece = ({
     raycaster.setFromCamera(mouse, camera);
     
     const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(plane, intersection);
+    raycaster.ray.intersectPlane(correctPlane, intersection);
     
     return intersection;
-  }, [camera, raycaster, mouse, gl]);
+  }, [camera, raycaster, mouse, gl, getDragPlane]);
 
 
   // Removido useFrame para evitar rotação indesejada durante o arraste
@@ -61,24 +106,26 @@ const BaseTrussPiece = ({
       
       if (movementMode === 'horizontal') {
         // Para movimento horizontal, usar offset normal
-        dragOffset.current.copy(intersection).sub(new THREE.Vector3(...position));
+        const currentWorldPosition = getWorldPosition(); // Use getWorldPosition function
+        dragOffset.current.copy(intersection).sub(new THREE.Vector3(...currentWorldPosition));
         
         // Plano horizontal na altura da peça
-        const clampedY = Math.max(position[1], 0);
+        const clampedY = Math.max(currentWorldPosition[1], 0);
         dragPlane.current.setFromNormalAndCoplanarPoint(
           new THREE.Vector3(0, 1, 0),
           new THREE.Vector3(0, clampedY, 0)
         );
       } else {
         // Para movimento vertical, armazenar posição inicial do mouse e altura
+        const currentWorldPosition = getWorldPosition(); // Use getWorldPosition function
         initialMouseY.current = event.clientY;
-        initialHeight.current = position[1];
+        initialHeight.current = currentWorldPosition[1];
         
         // Plano vertical perpendicular à câmera
         const cameraDirection = camera.getWorldDirection(new THREE.Vector3());
         dragPlane.current.setFromNormalAndCoplanarPoint(
           cameraDirection,
-          new THREE.Vector3(...position)
+          new THREE.Vector3(...currentWorldPosition)
         );
       }
       
@@ -91,7 +138,7 @@ const BaseTrussPiece = ({
         }
       }
     }
-  }, [getIntersectionPoint, onDrag, position, gl, movementMode, camera]);
+  }, [getIntersectionPoint, onDrag, getWorldPosition, gl, movementMode, camera]);
 
 
   // Event listeners globais para capturar movimento e soltura do mouse
@@ -103,11 +150,19 @@ const BaseTrussPiece = ({
           const intersection = getIntersectionPoint(event);
           if (intersection) {
             const newPosition = intersection.sub(dragOffset.current);
-            // Para movimento horizontal, apenas projetar no plano horizontal
-            const projectedPosition = new THREE.Vector3(newPosition.x, position[1], newPosition.z);
+            
+            // Considerar a rotação da peça para movimento correto
+            const currentRotation = new THREE.Euler(...getWorldRotation()); // Use getWorldRotation function
+            const currentWorldPosition = getWorldPosition(); // Use getWorldPosition function
+            let projectedPosition;
+            
+            // Para todas as peças, movimento no plano horizontal X-Z (preservar Y)
+            // A rotação da peça não deve afetar o movimento horizontal
+            projectedPosition = new THREE.Vector3(newPosition.x, currentWorldPosition[1], newPosition.z);
             
             console.log('🔵 HORIZONTAL MOVEMENT:', {
-              'Posição original': `X:${position[0].toFixed(3)}, Y:${position[1].toFixed(3)}, Z:${position[2].toFixed(3)}`,
+              'Posição original': `X:${currentWorldPosition[0].toFixed(3)}, Y:${currentWorldPosition[1].toFixed(3)}, Z:${currentWorldPosition[2].toFixed(3)}`,
+              'Rotação': `X:${currentRotation.x.toFixed(3)}, Y:${currentRotation.y.toFixed(3)}, Z:${currentRotation.z.toFixed(3)}`,
               'Interseção': `X:${intersection.x.toFixed(3)}, Y:${intersection.y.toFixed(3)}, Z:${intersection.z.toFixed(3)}`,
               'Nova posição': `X:${newPosition.x.toFixed(3)}, Y:${newPosition.y.toFixed(3)}, Z:${newPosition.z.toFixed(3)}`,
               'Posição projetada': `X:${projectedPosition.x.toFixed(3)}, Y:${projectedPosition.y.toFixed(3)}, Z:${projectedPosition.z.toFixed(3)}`,
@@ -121,13 +176,26 @@ const BaseTrussPiece = ({
           const mouseDelta = initialMouseY.current - event.clientY; // Invertido: mouse para cima = peça sobe
           const sensitivity = 0.005; // Sensibilidade mais baixa para controle preciso
           const heightChange = mouseDelta * sensitivity;
-          const newHeight = Math.max(initialHeight.current + heightChange, 0);
+          // Calcular altura mínima baseada no tipo de peça e rotação
+          const currentRotation = new THREE.Euler(...getWorldRotation());
+          const isVertical = Math.abs(currentRotation.z - Math.PI/2) < 0.1;
+          
+          let minHeight = 0;
+          if (isVertical) {
+            // Para peças em pé, altura mínima baseada no tipo de peça
+            // Assumindo que pieceDimensions está disponível ou podemos inferir do tipo
+            // Para Grid4m em pé: altura mínima = metade do comprimento (2m)
+            minHeight = 2.0; // Altura mínima para peças em pé
+          }
+          
+          const newHeight = Math.max(initialHeight.current + heightChange, minHeight);
           
           // Para movimento vertical, criar um Vector3 que preserve X e Z
-          const projectedPosition = new THREE.Vector3(position[0], newHeight, position[2]);
+          const currentWorldPosition = getWorldPosition(); // Use getWorldPosition function
+          const projectedPosition = new THREE.Vector3(currentWorldPosition[0], newHeight, currentWorldPosition[2]);
           
           console.log('🟡 VERTICAL MOVEMENT:', {
-            'Posição original': `X:${position[0].toFixed(3)}, Y:${position[1].toFixed(3)}, Z:${position[2].toFixed(3)}`,
+            'Posição original': `X:${currentWorldPosition[0].toFixed(3)}, Y:${currentWorldPosition[1].toFixed(3)}, Z:${currentWorldPosition[2].toFixed(3)}`,
             'Mouse delta': mouseDelta.toFixed(3),
             'Height change': heightChange.toFixed(6),
             'Nova altura': newHeight.toFixed(6),
@@ -142,7 +210,7 @@ const BaseTrussPiece = ({
 
     const handleGlobalPointerUp = () => {
       if (isDraggingLocal && onDrop) {
-        onDrop({ position });
+        onDrop({ position: worldPosition });
         setIsDraggingLocal(false);
         
         // Resetar cursor
@@ -161,7 +229,7 @@ const BaseTrussPiece = ({
       document.removeEventListener('pointermove', handleGlobalPointerMove);
       document.removeEventListener('pointerup', handleGlobalPointerUp);
     };
-  }, [isDraggingLocal, onDrag, onDrop, getIntersectionPoint, pieceId, position, gl, movementMode]);
+  }, [isDraggingLocal, onDrag, onDrop, getIntersectionPoint, pieceId, getWorldPosition, getWorldRotation, gl, movementMode, worldPosition]);
 
   const handlePointerOver = () => {
     setHovered(true);
@@ -249,20 +317,53 @@ const BaseTrussPiece = ({
       {/* Indicador de movimento vertical - apenas quando selecionada e no modo vertical */}
       {isSelected && movementMode === 'vertical' && (
         <group>
-          {/* Linha vertical de referência (8 metros) */}
-          <Box args={[0.05, 8, 0.05]} position={[0, 4, 0]}>
-            <meshBasicMaterial color="#ff6b6b" transparent opacity={0.3} />
-          </Box>
-          {/* Indicador de altura atual */}
-          <Box args={[0.3, 0.1, 0.3]} position={[0, position[1], 0]}>
-            <meshBasicMaterial color="#ff6b6b" transparent opacity={0.8} />
-          </Box>
-          {/* Marcadores de altura */}
-          {[0, 2, 4, 6, 8].map(height => (
-            <Box key={height} args={[0.1, 0.05, 0.1]} position={[0, height, 0]}>
-              <meshBasicMaterial color="#ff6b6b" transparent opacity={0.6} />
-            </Box>
-          ))}
+          {/* Verificar se a peça está em pé (Z+90°) */}
+          {(() => {
+            const currentRotation = new THREE.Euler(...getWorldRotation());
+            const isVertical = Math.abs(currentRotation.z - Math.PI/2) < 0.1;
+            
+            if (isVertical) {
+              // Para peças em pé: seta vertical roxa
+              return (
+                <group>
+                  {/* Linha vertical de referência (8 metros) */}
+                  <Box args={[0.05, 8, 0.05]} position={[0, 4, 0]}>
+                    <meshBasicMaterial color="#8b5cf6" transparent opacity={0.3} />
+                  </Box>
+                  {/* Indicador de altura atual - seta vertical */}
+                  <Box args={[0.1, 0.3, 0.1]} position={[0, actualWorldPosition[1], 0]}>
+                    <meshBasicMaterial color="#8b5cf6" transparent opacity={0.8} />
+                  </Box>
+                  {/* Marcadores de altura */}
+                  {[0, 2, 4, 6, 8].map(height => (
+                    <Box key={height} args={[0.05, 0.1, 0.05]} position={[0, height, 0]}>
+                      <meshBasicMaterial color="#8b5cf6" transparent opacity={0.6} />
+                    </Box>
+                  ))}
+                </group>
+              );
+            } else {
+              // Para peças normais: seta horizontal vermelha
+              return (
+                <group>
+                  {/* Linha vertical de referência (8 metros) */}
+                  <Box args={[0.05, 8, 0.05]} position={[0, 4, 0]}>
+                    <meshBasicMaterial color="#ff6b6b" transparent opacity={0.3} />
+                  </Box>
+                  {/* Indicador de altura atual */}
+                  <Box args={[0.3, 0.1, 0.3]} position={[0, actualWorldPosition[1], 0]}>
+                    <meshBasicMaterial color="#ff6b6b" transparent opacity={0.8} />
+                  </Box>
+                  {/* Marcadores de altura */}
+                  {[0, 2, 4, 6, 8].map(height => (
+                    <Box key={height} args={[0.1, 0.05, 0.1]} position={[0, height, 0]}>
+                      <meshBasicMaterial color="#ff6b6b" transparent opacity={0.6} />
+                    </Box>
+                  ))}
+                </group>
+              );
+            }
+          })()}
         </group>
       )}
     </group>

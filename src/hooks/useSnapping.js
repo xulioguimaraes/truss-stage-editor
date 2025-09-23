@@ -2,13 +2,13 @@ import { useCallback } from 'react';
 import * as THREE from 'three';
 
 export const useSnapping = (pieces, snapThreshold = 0.5) => {
-  const getSnapPoints = useCallback((piece) => {
+  const getSnapPoints = useCallback((pieceType) => {
     // Definir pontos de encaixe baseados no tipo de peça
     const basePoints = [
       [0, 0, 0], // Centro
     ];
 
-    switch (piece.type) {
+    switch (pieceType) {
       case 'Cube5Faces':
         return [
           ...basePoints,
@@ -24,7 +24,7 @@ export const useSnapping = (pieces, snapThreshold = 0.5) => {
       case 'Grid2m':
       case 'Grid3m':
       case 'Grid4m': {
-        const length = parseFloat(piece.type.replace('Grid', '').replace('m', ''));
+        const length = parseFloat(pieceType.replace('Grid', '').replace('m', ''));
         return [
           // Pontos de encaixe nas extremidades (principais para conexão)
           [length/2, 0, 0],    // Extremidade direita
@@ -75,7 +75,7 @@ export const useSnapping = (pieces, snapThreshold = 0.5) => {
     pieces.forEach(piece => {
       if (piece.id === excludeId) return;
 
-      const pieceSnapPoints = getSnapPoints(piece);
+      const pieceSnapPoints = getSnapPoints(piece.type);
       
       pieceSnapPoints.forEach(snapPoint => {
         // Transformar o ponto de encaixe para a posição mundial da peça
@@ -130,11 +130,39 @@ export const useSnapping = (pieces, snapThreshold = 0.5) => {
     return snapResult;
   }, [findNearestSnapPoint]);
 
+  const getPieceDimensions = useCallback((pieceType) => {
+    switch (pieceType) {
+      case 'Cube5Faces':
+        return [1, 1, 1]; // Cubo 1x1x1
+      
+      case 'Grid0_5m':
+        return [0.5, 0.4, 0.4]; // Comprimento 0.5m, altura 0.4m, largura 0.4m
+      case 'Grid1m':
+        return [1, 0.4, 0.4]; // Comprimento 1m, altura 0.4m, largura 0.4m
+      case 'Grid2m':
+        return [2, 0.4, 0.4]; // Comprimento 2m, altura 0.4m, largura 0.4m
+      case 'Grid3m':
+        return [3, 0.4, 0.4]; // Comprimento 3m, altura 0.4m, largura 0.4m
+      case 'Grid4m':
+        return [4, 0.4, 0.4]; // Comprimento 4m, altura 0.4m, largura 0.4m
+      
+      case 'Sapata':
+        return [0.8, 0.4, 0.8]; // Base 0.8x0.8, altura 0.4m
+      
+      case 'Cumeeira':
+        return [1, 0.5, 0.2]; // Largura 1m, altura 0.5m, profundidade 0.2m
+      
+      default:
+        return [1, 1, 1]; // Dimensões padrão
+    }
+  }, []);
+
   return {
     getSnapPoints,
     findNearestSnapPoint,
     snapToNearest,
     getSnapPreview,
+    getPieceDimensions,
   };
 };
 

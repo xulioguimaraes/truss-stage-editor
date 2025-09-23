@@ -18,7 +18,7 @@ import {
 } from './TrussPieces';
 
 // Componente para renderizar uma peça individual
-const TrussPiece = ({ piece, isSelected, movementMode, onSelect, onDrag, onDrop, snapPreview }) => {
+const TrussPiece = ({ piece, isSelected, movementMode, onSelect, onDrag, onDrop, snapPreview, getSnapPoints, getPieceDimensions }) => {
   const ComponentMap = {
     Cube5Faces,
     Grid0_5m,
@@ -37,10 +37,33 @@ const TrussPiece = ({ piece, isSelected, movementMode, onSelect, onDrag, onDrop,
     return null;
   }
 
+  // Debug: Log component info
+  console.log('🔍 COMPONENT DEBUG:', {
+    'Piece type': piece.type,
+    'Component found': !!Component,
+    'Component name': Component?.name || 'Unknown',
+    'ComponentMap keys': Object.keys(ComponentMap)
+  });
+
   const handleClick = (event) => {
     event.stopPropagation();
     onSelect(piece.id);
   };
+
+  // Obter snap points e dimensões da peça
+  const snapPoints = getSnapPoints ? getSnapPoints(piece.type) : [];
+  const pieceDimensions = getPieceDimensions ? getPieceDimensions(piece.type) : [1, 1, 1];
+
+  // Debug: Log what we're passing to BaseTrussPiece
+  console.log('🔍 SCENE3D PROPS:', {
+    'Piece ID': piece.id,
+    'Piece position': `X:${piece.position[0].toFixed(3)}, Y:${piece.position[1].toFixed(3)}, Z:${piece.position[2].toFixed(3)}`,
+    'Piece rotation': `X:${piece.rotation[0].toFixed(3)}, Y:${piece.rotation[1].toFixed(3)}, Z:${piece.rotation[2].toFixed(3)}`,
+    'WorldPosition being passed': `X:${piece.position[0].toFixed(3)}, Y:${piece.position[1].toFixed(3)}, Z:${piece.position[2].toFixed(3)}`,
+    'WorldRotation being passed': `X:${piece.rotation[0].toFixed(3)}, Y:${piece.rotation[1].toFixed(3)}, Z:${piece.rotation[2].toFixed(3)}`,
+    'Component type': piece.type,
+    'Component found': !!Component
+  });
 
   return (
     <group
@@ -50,7 +73,7 @@ const TrussPiece = ({ piece, isSelected, movementMode, onSelect, onDrag, onDrop,
       onClick={handleClick}
     >
       <Component
-        position={piece.position}
+        position={[0, 0, 0]}
         rotation={[0, 0, 0]}
         scale={[1, 1, 1]}
         isSelected={isSelected}
@@ -59,6 +82,10 @@ const TrussPiece = ({ piece, isSelected, movementMode, onSelect, onDrag, onDrop,
         onSelect={() => onSelect(piece.id)}
         onDrag={onDrag}
         onDrop={onDrop}
+        worldPosition={piece.position}
+        worldRotation={piece.rotation}
+        snapPoints={snapPoints}
+        pieceDimensions={pieceDimensions}
       />
     </group>
   );
@@ -104,7 +131,7 @@ const SceneContent = ({
   onStartDrag, 
   onEndDrag 
 }) => {
-  const { snapToNearest, getSnapPreview } = useSnapping(pieces);
+  const { snapToNearest, getSnapPreview, getSnapPoints, getPieceDimensions } = useSnapping(pieces);
   const [snapPreview, setSnapPreview] = useState(null);
   const [isDraggingPiece, setIsDraggingPiece] = useState(false);
 
@@ -208,6 +235,8 @@ const SceneContent = ({
           onDrag={handleDrag}
           onDrop={handleDragEnd}
           snapPreview={snapPreview}
+          getSnapPoints={getSnapPoints}
+          getPieceDimensions={getPieceDimensions}
         />
       ))}
 

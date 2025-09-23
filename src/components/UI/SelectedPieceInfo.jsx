@@ -180,6 +180,45 @@ const SelectedPieceInfo = ({ selectedPiece, movementMode, onRotate, onUpdatePiec
         </div>
       </RotationControls>
 
+      {/* Controles de Rotações Rápidas */}
+      <RotationControls>
+        <Label>Orientação Rápida:</Label>
+        <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <Button 
+            onClick={() => onRotate(selectedPiece.id, [0, 0, Math.PI/2])}
+            style={{ 
+              background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+              minWidth: '80px'
+            }}
+          >
+            🧍 Em Pé
+          </Button>
+          <Button 
+            onClick={() => onRotate(selectedPiece.id, [Math.PI/2, 0, 0])}
+            style={{ 
+              background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+              minWidth: '80px'
+            }}
+          >
+            🛏️ Deitado
+          </Button>
+          <Button 
+            onClick={() => onRotate(selectedPiece.id, [0, 0, 0])}
+            style={{ 
+              background: 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)',
+              minWidth: '80px'
+            }}
+          >
+            🔄 Normal
+          </Button>
+        </div>
+        <div style={{ marginTop: '4px', fontSize: '12px', color: '#666' }}>
+          <div>🧍 Em Pé: Z+90° (vertical)</div>
+          <div>🛏️ Deitado: X+90° (horizontal)</div>
+          <div>🔄 Normal: Volta à posição original</div>
+        </div>
+      </RotationControls>
+
       <RotationControls>
         <Label>Rotação Rápida:</Label>
         <div style={{ marginTop: '8px' }}>
